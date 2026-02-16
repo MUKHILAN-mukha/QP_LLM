@@ -70,3 +70,4 @@ Builds on FastAPI, React, Hugging Face Inference, and FAISS.
 - **Backend**: FastAPI, SQLModel, PyMuPDF, SentenceTransformers, FAISS
 - **Frontend**: React, Vite, Axios, Lucide React, React Markdown
 - **AI**: Hugging Face Inference API (Zephyr-7b-beta)
+ 
