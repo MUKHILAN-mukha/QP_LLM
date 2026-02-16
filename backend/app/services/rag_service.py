@@ -213,4 +213,75 @@ class RAGService:
             "context_used": docs
         }
 
+    def generate_structured_exam(self, subject_id: int, unit_count: int = 5) -> dict:
+        """
+        Generates a full exam paper structure with Part A (2 marks) and Part B (16 marks).
+        Strictly enforces the St. Xavier's format with CL and CO mapping.
+        """
+        
+        # 1. Define the System Prompt for JSON Structure
+        system_prompt = """
+        You are an expert exam setter for St. Xavier's Catholic College of Engineering.
+        Your task is to generate a question paper in strict JSON format.
+        
+        STRUCTURE REQUIRED:
+        {
+            "part_a": [
+                {"question": "Define...", "cl": "Re", "co": "CO1"},
+                {"question": "What is...", "cl": "Un", "co": "CO1"}
+                ... (10 questions total, 2 from each Unit 1-5)
+            ],
+            "part_b": [
+                {"question": "Explain detailed...", "cl": "Ap", "co": "CO2"},
+                ... (5 questions total, 1 from each Unit 1-5)
+            ]
+        }
+        
+        RULES:
+        1. "part_a": Generate 10 questions (2 Marks). MUST cover all units equally.
+        2. "part_b": Generate 5 detailed questions (16 Marks). MUST cover all units.
+        3. "cl": Cognitive Level (Re=Remember, Un=Understand, Ap=Apply, An=Analyze, Ev=Evaluate, Cr=Create).
+        4. "co": Course Outcome (CO1, CO2, CO3, CO4, CO5). Map Unit 1->CO1, Unit 2->CO2, etc.
+        5. OUTPUT JSON ONLY. No markdown, no conversational text.
+        """
+        
+        # 2. Retrieve Context (Global Search)
+        # We need a broad context covering all units to ensure the LLM has material.
+        # Stratified search for all 5 units.
+        all_docs = []
+        for i in range(1, 6):
+            unit_docs = vector_store.search(subject_id, f"unit {i} important questions definitions", k=5, filter_dict={"unit": f"unit {i}"})
+            all_docs.extend(unit_docs)
+        
+        # Shuffle context for variety
+        random.shuffle(all_docs)
+        
+        # Limit context size to avoid context window overflow (top 20 chunks)
+        context_text = "\n".join([d['text'] for d in all_docs[:25]])
+        
+        prompt = f"""
+        Context from Course Notes:
+        {context_text}
+        
+        TASK:
+        Generate a full internal exam question paper based on the above context.
+        Follow the JSON structure strictly.
+        """
+        
+        # 3. Query LLM
+        response_json_str = self._query_llm(prompt, system_prompt)
+        
+        # 4. Parse JSON
+        try:
+            # Clean potential markdown wrappers
+            clean_json = re.sub(r'```json\s*|\s*```', '', response_json_str).strip()
+            data = json.loads(clean_json)
+            return data
+        except json.JSONDecodeError:
+            logger.error(f"Failed to parse Exam JSON: {response_json_str}")
+            return {
+                "part_a": [{"question": "Error generating exam. Please try again.", "cl": "N/A", "co": "N/A"}],
+                "part_b": []
+            }
+
 rag_service = RAGService()

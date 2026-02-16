@@ -52,4 +52,13 @@ export const getChatHistory = async (subjectId) => {
     return response.data;
 };
 
+
+export const generateExamPDF = async (subjectId, formattedQuestions = null) => {
+    const payload = formattedQuestions ? { formatted_questions: formattedQuestions } : {};
+    const response = await api.post(`/chat/${subjectId}/generate-pdf`, payload, {
+        responseType: 'blob', // Important for file download
+    });
+    return response.data;
+};
+
 export default api;

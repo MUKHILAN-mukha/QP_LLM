@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, User, Bot, Loader2, Sparkles } from 'lucide-react';
+import { Send, User, Bot, Loader2, Sparkles, FileDown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { chat, getChatHistory } from '../services/api';
+import { chat, getChatHistory, generateExamPDF } from '../services/api';
 
 const ChatWindow = ({ subject }) => {
     const [messages, setMessages] = useState([]);
@@ -9,9 +9,36 @@ const ChatWindow = ({ subject }) => {
     const [loading, setLoading] = useState(false);
     const [isPolling, setIsPolling] = useState(false);
     const [loadingHistory, setLoadingHistory] = useState(false);
+    const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
     const pollingTimeoutRef = useRef(null);
+
+    const handleDownloadPDF = async () => {
+        try {
+            setIsGeneratingPDF(true);
+            const blob = await generateExamPDF(subject.id);
+
+            // Create download link
+            const url = window.URL.createObjectURL(new Blob([blob]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `Exam_${subject.name}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Failed to download PDF:", error);
+            // Optional: Show toast error
+            setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: "❌ **PDF Generation Failed.** Please try again later."
+            }]);
+        } finally {
+            setIsGeneratingPDF(false);
+        }
+    };
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -123,6 +150,25 @@ const ChatWindow = ({ subject }) => {
                     <div className="loading-container animate-fade-in">
                         <Loader2 className="animate-spin mb-4" size={40} style={{ color: 'var(--accent-primary)' }} />
                         <p className="loading-text" style={{ fontWeight: 600, letterSpacing: '0.05em' }}>PREPARING KNOWLEDGE...</p>
+                    </div>
+                ) : messages.length === 0 ? (
+                    <div className="empty-chat-state">
+                        <div className="empty-icon-wrapper">
+                            <Bot size={64} style={{ opacity: 0.5 }} />
+                        </div>
+                        <h3>Ask me anything about {subject.name}</h3>
+                        <p>I can help you study, summarize notes, or generate exam papers.</p>
+
+                        <div className="quick-actions">
+                            <button
+                                onClick={handleDownloadPDF}
+                                className="quick-action-btn"
+                                disabled={isGeneratingPDF}
+                            >
+                                {isGeneratingPDF ? <Loader2 className="animate-spin" size={20} /> : <FileDown size={20} />}
+                                <span>Generate Exam PDF</span>
+                            </button>
+                        </div>
                     </div>
                 ) : (
                     <>
