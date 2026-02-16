@@ -1,0 +1,9 @@
+/* ChatWindow.css */
+/* Add any specific chat window styles here if needed overrides */
+.prose p {
+    margin-bottom: 0.5em;
+}
+
+.prose p:last-child {
+    margin-bottom: 0;
+}
