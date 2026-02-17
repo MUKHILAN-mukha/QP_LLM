@@ -71,20 +71,23 @@ function App() {
             const trimmedLine = line.trim();
 
             // Section Detection
-            if (trimmedLine.match(/part\s*b|16\s*marks|fourteen|sixteen/i)) {
+            // Matches: "Part B", "16 marks", "16-mark", "16 mark"
+            if (trimmedLine.match(/part\s*b|16\s*-?\s*marks?|fourteen|sixteen/i)) {
               currentSection = 'part_b';
               return; // specific skip
-            } else if (trimmedLine.match(/part\s*a|2\s*marks|two/i)) {
+            } else if (trimmedLine.match(/part\s*a|2\s*-?\s*marks?|two/i)) {
               currentSection = 'part_a';
               return;
             }
 
             // Question Extraction
             // Matches: "1. Question...", "1. Unit 1 - Question...", "1) Question..."
-            // Also looks for trailing metadata like (Un CO1) or (Re CO2)
-            const match = trimmedLine.match(/^\d+[\.\)]\s*(.+)/);
-            if (match && trimmedLine.length > 10) {
-              let qText = match[1];
+            // Also handles markdown bolding like "**1.**" or "1."
+            const cleanLine = trimmedLine.replace(/^[\*\-\_\s]+/, '');
+            const match = cleanLine.match(/^(\d+)[\.\)]\s*(.+)/);
+
+            if (match && cleanLine.length > 10) {
+              let qText = match[2];
 
               // Extract CL and CO if present
               // Pattern: (Un CO1), (Re CO2), (Ap CO4), etc.
@@ -128,7 +131,6 @@ function App() {
 
           if (part_a.length > 0 || part_b.length > 0) {
             formattedQuestions = { part_a, part_b };
-            console.log("Extracted Questions for PDF:", formattedQuestions);
           }
         }
       } catch (e) {

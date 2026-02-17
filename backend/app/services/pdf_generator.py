@@ -151,8 +151,8 @@ class PDFGenerator:
             text = re.sub(r'\s*\(CO\d+\)', '', text, flags=re.IGNORECASE)
             # Remove (Un CO1), (Re CO2), (Ap CO4) patterns
             text = re.sub(r'\s*\(\w+\s*CO\d+\)', '', text, flags=re.IGNORECASE)
-            # Remove (Unit 1), (Unit 2) patterns
-            text = re.sub(r'\s*\(Unit\s*\d+\)', '', text, flags=re.IGNORECASE)
+            # Remove (Unit 1), (Unit 2), [Unit 1], [Unit 2] patterns
+            text = re.sub(r'\s*[\[\(]Unit\s*\d+[\]\)]', '', text, flags=re.IGNORECASE)
             # Remove leading numbering if captured (e.g. "1. Question")
             text = re.sub(r'^\d+[\.\)]\s*', '', text)
             return text.strip()

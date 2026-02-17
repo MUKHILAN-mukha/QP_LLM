@@ -7,3 +7,8 @@ dist/
 uploads/
 faiss_index/
 .DS_Store
+
+# Database
+*.db
+*.db-shm
+*.db-wal
